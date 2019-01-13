@@ -3,9 +3,11 @@ package com.example.nobuyasu.ticketresultandroid.main;
 import android.content.SharedPreferences;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import java.net.URL;
@@ -36,9 +38,7 @@ public class MainActivity extends AppCompatActivity {
         phoneNumberEdit.setText(phoneNumber);
 
         String receiptNumberStr = settings.getString("ReceiptNumber", "");
-        System.out.println(receiptNumberStr.length());
         for (String receiptNumber : receiptNumberStr.split(",")) {
-            System.out.println(receiptNumber.length() + "=> " + receiptNumber);
             addReceipt(receiptNumber);
         }
 
@@ -52,13 +52,17 @@ public class MainActivity extends AppCompatActivity {
                     setSettingsPhoneNumber(phoneNumberEdit.getText().toString());
                 }
 
-                System.out.println(receiptNumbers.size());
                 for (int i=0; i<receiptNumbers.size(); ++i) {
-                    System.out.println(receiptNumbers.get(i).getText());
-                    System.out.println(receiptResults.get(i).getText());
+//                    System.out.println(receiptNumbers.get(i).getText());
                     reviewTicket(i);
                 }
                 setSettingsReceiptNumber();
+            }
+        });
+        findViewById(R.id.add_receipt).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                addReceipt("");
             }
         });
     }
@@ -94,18 +98,17 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 if (result.indexOf("抽選の結果、お客様はご当選されました。") > -1) {
-                    System.out.println("当選");
+//                    System.out.println("当選");
                     target.setText("当選");
                 } else if (result.indexOf("抽選の結果、お客様は残念ながら落選となりました。") > -1) {
-                    System.out.println("落選");
+//                    System.out.println("落選");
                     target.setText("落選");
                 } else if (result.indexOf("抽選結果発表") > -1) {
-                    System.out.println("抽選前");
+//                    System.out.println("抽選前");
                     target.setText("抽選前");
                 } else {
 //                    System.out.println(result);
-                    System.out.println("抽選申し込み番号または電話番号が違います。");
-                    target.setText("抽選申し込み番号または電話番号が違います。");
+                    target.setText("一致なし");
                 }
             }
         }).start();
@@ -115,16 +118,16 @@ public class MainActivity extends AppCompatActivity {
         LinearLayout receiptAdd = new LinearLayout(findViewById(R.id.receipts).getContext());
         receiptAdd.setOrientation(LinearLayout.HORIZONTAL);
         receiptAdd.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        receiptAdd.setGravity(Gravity.END);
         receiptBox.addView(receiptAdd);
 
         EditText receiptNumberAdd = new EditText(receiptAdd.getContext());
         receiptNumberAdd.setText(receiptNum);
-        receiptNumberAdd.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        receiptNumberAdd.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 3));
         receiptAdd.addView(receiptNumberAdd);
 
         TextView receiptResultAdd = new TextView(receiptAdd.getContext());
-//        receiptResultAdd.setText("ddd");
-        receiptResultAdd.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        receiptResultAdd.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
         receiptAdd.addView(receiptResultAdd);
 
         receiptNumbers.add(receiptNumberAdd);
@@ -132,14 +135,21 @@ public class MainActivity extends AppCompatActivity {
     }
 
     protected void setSettingsPhoneNumber(String phoneNumber) {
-        settings.edit().putString("PhoneNumber", phoneNumber);
+//        System.out.println(phoneNumber);
+        SharedPreferences.Editor editor = settings.edit();
+        editor.putString("PhoneNumber", phoneNumber);
+        editor.commit();
     }
 
     protected void setSettingsReceiptNumber() {
         String receiptNumberStr = new String();
         for (EditText receiptNumber : receiptNumbers) {
-            receiptNumberStr = receiptNumberStr.concat("," + receiptNumber.getText().toString());
+            if (receiptNumber.getText().length() > 0) {
+                receiptNumberStr = receiptNumberStr.concat("," + receiptNumber.getText().toString());
+            }
         }
-        settings.edit().putString("ReceiptNumber", receiptNumberStr.substring(1));
+        SharedPreferences.Editor editor = settings.edit();
+        editor.putString("ReceiptNumber", receiptNumberStr.substring(1));
+        editor.commit();
     }
 }
