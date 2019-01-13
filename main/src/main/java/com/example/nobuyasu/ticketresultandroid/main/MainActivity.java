@@ -113,7 +113,7 @@ public class MainActivity extends AppCompatActivity {
 
     protected void addReceipt(String receiptNum) {
         LinearLayout receiptAdd = new LinearLayout(findViewById(R.id.receipts).getContext());
-        receiptAdd.setOrientation(LinearLayout.VERTICAL);
+        receiptAdd.setOrientation(LinearLayout.HORIZONTAL);
         receiptAdd.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
         receiptBox.addView(receiptAdd);
 
