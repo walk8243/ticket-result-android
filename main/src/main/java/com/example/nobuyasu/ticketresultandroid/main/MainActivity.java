@@ -1,5 +1,6 @@
 package com.example.nobuyasu.ticketresultandroid.main;
 
+import android.content.SharedPreferences;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
@@ -13,37 +14,51 @@ import java.util.HashMap;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
+    public static final String PREFS_NAME = "TicketResultAndroid";
+
     final HttpRequest HttpRequest = new HttpRequest();
     LinearLayout receiptBox;
-    EditText phoneNumber;
+    EditText phoneNumberEdit;
     List<EditText> receiptNumbers = new ArrayList<EditText>();
     List<TextView> receiptResults = new ArrayList<TextView>();
+    SharedPreferences settings;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        receiptBox = (LinearLayout) findViewById(R.id.receipts);
-        phoneNumber = (EditText) findViewById(R.id.phone_number);
-        phoneNumber.setText("09000000000");
+        settings = getSharedPreferences(PREFS_NAME, 0);
+        String phoneNumber = settings.getString("PhoneNumber", "09011112222");
 
-        addReceipt("RT00000XXX00");
-        addReceipt("RT00000XXX00");
+        receiptBox = (LinearLayout) findViewById(R.id.receipts);
+        phoneNumberEdit = (EditText) findViewById(R.id.phone_number);
+        phoneNumberEdit.setText(phoneNumber);
+
+        String receiptNumberStr = settings.getString("ReceiptNumber", "");
+        System.out.println(receiptNumberStr.length());
+        for (String receiptNumber : receiptNumberStr.split(",")) {
+            System.out.println(receiptNumber.length() + "=> " + receiptNumber);
+            addReceipt(receiptNumber);
+        }
 
         findViewById(R.id.submit).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (phoneNumber.getText().length() == 0) {
+                if (phoneNumberEdit.getText().length() == 0) {
                     System.out.println("phoneNumber Error");
                     return;
+                } else {
+                    setSettingsPhoneNumber(phoneNumberEdit.getText().toString());
                 }
+
                 System.out.println(receiptNumbers.size());
                 for (int i=0; i<receiptNumbers.size(); ++i) {
                     System.out.println(receiptNumbers.get(i).getText());
                     System.out.println(receiptResults.get(i).getText());
                     reviewTicket(i);
                 }
+                setSettingsReceiptNumber();
             }
         });
     }
@@ -57,7 +72,7 @@ public class MainActivity extends AppCompatActivity {
         }
         HashMap<String, String> reviewData = new HashMap<String, String>();
         reviewData.put("entry_no", receiptNumber.getText().toString());
-        reviewData.put("tel_no", phoneNumber.getText().toString());
+        reviewData.put("tel_no", phoneNumberEdit.getText().toString());
         httpRequest("https://rt.tstar.jp/lots/review", "POST", reviewData, receiptResult);
     }
 
@@ -114,5 +129,17 @@ public class MainActivity extends AppCompatActivity {
 
         receiptNumbers.add(receiptNumberAdd);
         receiptResults.add(receiptResultAdd);
+    }
+
+    protected void setSettingsPhoneNumber(String phoneNumber) {
+        settings.edit().putString("PhoneNumber", phoneNumber);
+    }
+
+    protected void setSettingsReceiptNumber() {
+        String receiptNumberStr = new String();
+        for (EditText receiptNumber : receiptNumbers) {
+            receiptNumberStr = receiptNumberStr.concat("," + receiptNumber.getText().toString());
+        }
+        settings.edit().putString("ReceiptNumber", receiptNumberStr.substring(1));
     }
 }
