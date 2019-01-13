@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
     <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">android.com</domain>
-        <domain includeSubdomains="true">qiita.com</domain>
         <domain includeSubdomains="true">tstar.jp</domain>
     </domain-config>
 </network-security-config>
