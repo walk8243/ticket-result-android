@@ -17,29 +17,6 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <LinearLayout
-                android:id="@+id/receipt1"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="20px"
-                android:orientation="vertical">
-
-                <EditText
-                    android:id="@+id/receipt1_number"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:autofillHints="RT01234AAA56"
-                    android:ems="10"
-                    android:hint="受付番号（RT01234AAA56）"
-                    android:inputType="text"
-                    android:tag="receipt_number" />
-
-                <TextView
-                    android:id="@+id/receipt1_result"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content" />
-            </LinearLayout>
-
         </LinearLayout>
 
         <Button
