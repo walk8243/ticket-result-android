@@ -1,8 +1,20 @@
 package com.example.nobuyasu.ticketresultandroid.main;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
+import android.os.Handler;
+import android.provider.Browser;
+import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.Spannable;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.method.LinkMovementMethod;
+import android.text.method.MovementMethod;
+import android.text.style.ClickableSpan;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.EditText;
@@ -10,20 +22,28 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import org.w3c.dom.Text;
+
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class MainActivity extends AppCompatActivity {
     public static final String PREFS_NAME = "TicketResultAndroid";
 
     final HttpRequest HttpRequest = new HttpRequest();
+    final Handler handler = new Handler();
     LinearLayout receiptBox;
     EditText phoneNumberEdit;
     List<EditText> receiptNumbers = new ArrayList<EditText>();
-    List<TextView> receiptResults = new ArrayList<TextView>();
+    List<LinearLayout> receiptResults = new ArrayList<LinearLayout>();
     SharedPreferences settings;
+    String regex = "(第.+希望).+?(<span>(.+?)</span>)";
+    Pattern pattern = Pattern.compile(regex);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,7 +89,7 @@ public class MainActivity extends AppCompatActivity {
 
     protected void reviewTicket(int index) {
         EditText receiptNumber = receiptNumbers.get(index);
-        TextView receiptResult = receiptResults.get(index);
+        LinearLayout receiptResult = receiptResults.get(index);
         if (receiptNumber.getText().length() == 0) {
             System.out.println("receiptNumber Error");
             return;
@@ -80,7 +100,7 @@ public class MainActivity extends AppCompatActivity {
         httpRequest("https://rt.tstar.jp/lots/review", "POST", reviewData, receiptResult);
     }
 
-    protected void httpRequest(final String urlStr, final String method, final HashMap<String, String> data, final TextView target) {
+    protected void httpRequest(final String urlStr, final String method, final HashMap<String, String> data, final LinearLayout target) {
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -97,18 +117,67 @@ public class MainActivity extends AppCompatActivity {
                     return;
                 }
 
-                if (result.indexOf("抽選の結果、お客様はご当選されました。") > -1) {
-//                    System.out.println("当選");
-                    target.setText("当選");
-                } else if (result.indexOf("抽選の結果、お客様は残念ながら落選となりました。") > -1) {
+                String entryBody = result.substring(result.indexOf("<h2 class=\"title\">お申込内容</h2>") + "<h2 class=\"title\">お申込内容</h2>".length());
+//                Log.d("response body", entryBody);
+                Matcher matcher = pattern.matcher(entryBody);
+                if(matcher.find()) {
+                    Log.d("Pattern", matcher.group(1));
+                    Log.d("Pattern", matcher.group(3));
+                    System.out.println("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$");
+                    final String receiptResultTitle = matcher.group(3);
+
+                    if (result.indexOf("抽選の結果、お客様はご当選されました。") > -1) {
+                        handler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                System.out.println(urlStr);
+                                TextView textView1, textView2;
+                                textView1 = (TextView)target.getChildAt(0);
+                                textView1.setText(receiptResultTitle);
+                                textView2 = (TextView)target.getChildAt(1);
+                                textView2.setText("当選");
+                            }
+                        });
+                    } else if (result.indexOf("抽選の結果、お客様は残念ながら落選となりました。") > -1) {
 //                    System.out.println("落選");
-                    target.setText("落選");
-                } else if (result.indexOf("抽選結果発表") > -1) {
+                        handler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                System.out.println(urlStr);
+                                TextView textView1, textView2;
+                                textView1 = (TextView)target.getChildAt(0);
+                                textView1.setText(receiptResultTitle);
+                                textView2 = (TextView)target.getChildAt(1);
+                                textView2.setText("落選");
+                            }
+                        });
+                    } else if (result.indexOf("抽選結果発表") > -1) {
 //                    System.out.println("抽選前");
-                    target.setText("抽選前");
-                } else {
+                        handler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                System.out.println(urlStr);
+                                TextView textView1, textView2;
+                                textView1 = (TextView)target.getChildAt(0);
+                                textView1.setText(receiptResultTitle);
+                                textView2 = (TextView)target.getChildAt(1);
+                                textView2.setText("抽選前");
+                            }
+                        });
+                    } else {
 //                    System.out.println(result);
-                    target.setText("一致なし");
+                        handler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                System.out.println(urlStr);
+                                TextView textView1, textView2;
+                                textView1 = (TextView)target.getChildAt(0);
+                                textView1.setText(receiptResultTitle);
+                                textView2 = (TextView)target.getChildAt(1);
+                                textView2.setText("一致なし");
+                            }
+                        });
+                    }
                 }
             }
         }).start();
@@ -116,19 +185,28 @@ public class MainActivity extends AppCompatActivity {
 
     protected void addReceipt(String receiptNum) {
         LinearLayout receiptAdd = new LinearLayout(findViewById(R.id.receipts).getContext());
-        receiptAdd.setOrientation(LinearLayout.HORIZONTAL);
+        receiptAdd.setOrientation(LinearLayout.VERTICAL);
         receiptAdd.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
-        receiptAdd.setGravity(Gravity.END);
         receiptBox.addView(receiptAdd);
 
         EditText receiptNumberAdd = new EditText(receiptAdd.getContext());
         receiptNumberAdd.setText(receiptNum);
-        receiptNumberAdd.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 3));
+        receiptNumberAdd.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
         receiptAdd.addView(receiptNumberAdd);
 
-        TextView receiptResultAdd = new TextView(receiptAdd.getContext());
-        receiptResultAdd.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+        LinearLayout receiptResultAdd = new LinearLayout(receiptAdd.getContext());
+        receiptResultAdd.setOrientation(LinearLayout.HORIZONTAL);
+        receiptResultAdd.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        receiptResultAdd.setGravity(Gravity.END);
         receiptAdd.addView(receiptResultAdd);
+
+        TextView receiptResultTitleAdd = new TextView(receiptResultAdd.getContext());
+        receiptResultTitleAdd.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 4));
+        receiptResultAdd.addView(receiptResultTitleAdd);
+
+        TextView receiptResultResultAdd = new TextView(receiptResultAdd.getContext());
+        receiptResultResultAdd.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+        receiptResultAdd.addView(receiptResultResultAdd);
 
         receiptNumbers.add(receiptNumberAdd);
         receiptResults.add(receiptResultAdd);
@@ -151,5 +229,30 @@ public class MainActivity extends AppCompatActivity {
         SharedPreferences.Editor editor = settings.edit();
         editor.putString("ReceiptNumber", receiptNumberStr.substring(1));
         editor.commit();
+    }
+
+    protected TextView setLinkOnTextView(TextView target, String message, String link) {
+        target.setText(createSpannableString(message, link));
+        target.setMovementMethod(LinkMovementMethod.getInstance());
+        return target;
+    }
+
+    protected SpannableString createSpannableString(final String message, final String link) {
+        SpannableString spannableString = new SpannableString(message);
+
+        spannableString.setSpan(new ClickableSpan() {
+            @Override
+            public void onClick(View widget) {
+                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(link));
+                startActivity(intent);
+            }
+        }, 0, message.length(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
+
+        return spannableString;
+    }
+
+    protected void openBrowser(final String url) {
+        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+        startActivity(intent);
     }
 }
