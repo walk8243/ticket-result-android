@@ -37,6 +37,7 @@ public class MainActivity extends AppCompatActivity {
 
     final HttpRequest HttpRequest = new HttpRequest();
     final Handler handler = new Handler();
+    ReceiptInfo receiptInfo;
     LinearLayout receiptBox;
     EditText phoneNumberEdit;
     List<EditText> receiptNumbers = new ArrayList<EditText>();
@@ -51,32 +52,32 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         settings = getSharedPreferences(PREFS_NAME, 0);
-        String phoneNumber = settings.getString("PhoneNumber", "09011112222");
+        receiptInfo = new ReceiptInfo(settings.getString("PhoneNumber", "09011112222"), settings.getString("ReceiptNumber", ""));
 
         receiptBox = (LinearLayout) findViewById(R.id.receipts);
         phoneNumberEdit = (EditText) findViewById(R.id.phone_number);
-        phoneNumberEdit.setText(phoneNumber);
-
-        String receiptNumberStr = settings.getString("ReceiptNumber", "");
-        for (String receiptNumber : receiptNumberStr.split(",")) {
+        phoneNumberEdit.setText(receiptInfo.getPhoneNumber());
+        for (String receiptNumber : receiptInfo.getReceiptNumbers()) {
             addReceipt(receiptNumber);
         }
 
         findViewById(R.id.submit).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                receiptInfo.setPhoneNumber(phoneNumberEdit.getText().toString());
                 if (phoneNumberEdit.getText().length() == 0) {
-                    System.out.println("phoneNumber Error");
+                    Log.e("R.id.submit", "phoneNumber Error");
                     return;
-                } else {
-                    setSettingsPhoneNumber(phoneNumberEdit.getText().toString());
                 }
 
+                String receiptNumberStr = new String();
                 for (int i=0; i<receiptNumbers.size(); ++i) {
-//                    System.out.println(receiptNumbers.get(i).getText());
+//                    Log.d("receiptNumber["+(i+1)+"]", receiptNumbers.get(i).getText().toString());
+                    receiptNumberStr = receiptNumberStr.concat(",").concat(receiptNumbers.get(i).getText().toString());
                     reviewTicket(i);
                 }
-                setSettingsReceiptNumber();
+                receiptInfo.setReceiptNumberStr(receiptNumberStr.substring(1));
+                setSettings();
             }
         });
         findViewById(R.id.add_receipt).setOnClickListener(new View.OnClickListener() {
@@ -91,7 +92,7 @@ public class MainActivity extends AppCompatActivity {
         EditText receiptNumber = receiptNumbers.get(index);
         LinearLayout receiptResult = receiptResults.get(index);
         if (receiptNumber.getText().length() == 0) {
-            System.out.println("receiptNumber Error");
+            Log.e("reviewTicket", "receiptNumber Error");
             return;
         }
         HashMap<String, String> reviewData = new HashMap<String, String>();
@@ -101,9 +102,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     protected void httpRequest(final String urlStr, final String method, final HashMap<String, String> data, final LinearLayout target) {
+        if (target.getChildCount() > 1) {
+            target.removeViews(1, target.getChildCount()-1);
+        }
+
         new Thread(new Runnable() {
             @Override
             public void run() {
+
                 String result = new String();
                 try {
                     URL url = new URL(urlStr);
@@ -119,64 +125,47 @@ public class MainActivity extends AppCompatActivity {
 
                 String entryBody = result.substring(result.indexOf("<h2 class=\"title\">お申込内容</h2>") + "<h2 class=\"title\">お申込内容</h2>".length());
 //                Log.d("response body", entryBody);
-                Matcher matcher = pattern.matcher(entryBody);
-                if(matcher.find()) {
-                    Log.d("Pattern", matcher.group(1));
-                    Log.d("Pattern", matcher.group(3));
-                    System.out.println("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$");
-                    final String receiptResultTitle = matcher.group(3);
+                while (true) {
+                    Matcher matcher = pattern.matcher(entryBody);
+                    if (matcher.find()) {
+//                        Log.d("Pattern", matcher.group(1));
+//                        Log.d("Pattern", matcher.group(3));
+                        final String receiptResultTitle = matcher.group(3);
 
-                    if (result.indexOf("抽選の結果、お客様はご当選されました。") > -1) {
-                        handler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                System.out.println(urlStr);
-                                TextView textView1, textView2;
-                                textView1 = (TextView)target.getChildAt(0);
-                                textView1.setText(receiptResultTitle);
-                                textView2 = (TextView)target.getChildAt(1);
-                                textView2.setText("当選");
-                            }
-                        });
-                    } else if (result.indexOf("抽選の結果、お客様は残念ながら落選となりました。") > -1) {
-//                    System.out.println("落選");
-                        handler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                System.out.println(urlStr);
-                                TextView textView1, textView2;
-                                textView1 = (TextView)target.getChildAt(0);
-                                textView1.setText(receiptResultTitle);
-                                textView2 = (TextView)target.getChildAt(1);
-                                textView2.setText("落選");
-                            }
-                        });
-                    } else if (result.indexOf("抽選結果発表") > -1) {
-//                    System.out.println("抽選前");
-                        handler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                System.out.println(urlStr);
-                                TextView textView1, textView2;
-                                textView1 = (TextView)target.getChildAt(0);
-                                textView1.setText(receiptResultTitle);
-                                textView2 = (TextView)target.getChildAt(1);
-                                textView2.setText("抽選前");
-                            }
-                        });
+                        if (result.indexOf("抽選の結果、お客様はご当選されました。") > -1) {
+                            handler.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    addReceiptResult(target, receiptResultTitle, "当選");
+                                }
+                            });
+                        } else if (result.indexOf("抽選の結果、お客様は残念ながら落選となりました。") > -1) {
+                            handler.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    addReceiptResult(target, receiptResultTitle, "落選");
+                                }
+                            });
+                        } else if (result.indexOf("抽選結果発表") > -1) {
+                            handler.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    addReceiptResult(target, receiptResultTitle, "抽選前");
+                                }
+                            });
+                        } else {
+                            Log.d("チケット結果 一致なし", result);
+                            handler.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    addReceiptResult(target, receiptResultTitle, "一致なし");
+                                }
+                            });
+                        }
+//                        Log.d("Last matcher", String.valueOf(matcher.end()));
+                        entryBody = entryBody.substring(matcher.end());
                     } else {
-//                    System.out.println(result);
-                        handler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                System.out.println(urlStr);
-                                TextView textView1, textView2;
-                                textView1 = (TextView)target.getChildAt(0);
-                                textView1.setText(receiptResultTitle);
-                                textView2 = (TextView)target.getChildAt(1);
-                                textView2.setText("一致なし");
-                            }
-                        });
+                        break;
                     }
                 }
             }
@@ -194,61 +183,35 @@ public class MainActivity extends AppCompatActivity {
         receiptNumberAdd.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
         receiptAdd.addView(receiptNumberAdd);
 
-        LinearLayout receiptResultAdd = new LinearLayout(receiptAdd.getContext());
+        receiptNumbers.add(receiptNumberAdd);
+        receiptResults.add(receiptAdd);
+    }
+
+    protected void addReceiptResult(LinearLayout linearLayout, String title, String result) {
+        LinearLayout receiptResultAdd = new LinearLayout(linearLayout.getContext());
         receiptResultAdd.setOrientation(LinearLayout.HORIZONTAL);
         receiptResultAdd.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
         receiptResultAdd.setGravity(Gravity.END);
-        receiptAdd.addView(receiptResultAdd);
+        linearLayout.addView(receiptResultAdd);
 
-        TextView receiptResultTitleAdd = new TextView(receiptResultAdd.getContext());
-        receiptResultTitleAdd.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 4));
-        receiptResultAdd.addView(receiptResultTitleAdd);
+        TextView titleAdd = new TextView(receiptResultAdd.getContext());
+        titleAdd.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 4));
+        titleAdd.setText(title);
+        receiptResultAdd.addView(titleAdd);
 
-        TextView receiptResultResultAdd = new TextView(receiptResultAdd.getContext());
-        receiptResultResultAdd.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
-        receiptResultAdd.addView(receiptResultResultAdd);
-
-        receiptNumbers.add(receiptNumberAdd);
-        receiptResults.add(receiptResultAdd);
+        TextView resultAdd = new TextView(receiptResultAdd.getContext());
+        resultAdd.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+        resultAdd.setText(result);
+        receiptResultAdd.addView(resultAdd);
     }
 
-    protected void setSettingsPhoneNumber(String phoneNumber) {
-//        System.out.println(phoneNumber);
+    protected void setSettings() {
+//        Log.d("PhoneNumber", receiptInfo.getPhoneNumber());
+//        Log.d("ReceiptNumber", receiptInfo.getReceiptNumberStr());
         SharedPreferences.Editor editor = settings.edit();
-        editor.putString("PhoneNumber", phoneNumber);
+        editor.putString("PhoneNumber", receiptInfo.getPhoneNumber());
+        editor.putString("ReceiptNumber", receiptInfo.getReceiptNumberStr());
         editor.commit();
-    }
-
-    protected void setSettingsReceiptNumber() {
-        String receiptNumberStr = new String();
-        for (EditText receiptNumber : receiptNumbers) {
-            if (receiptNumber.getText().length() > 0) {
-                receiptNumberStr = receiptNumberStr.concat("," + receiptNumber.getText().toString());
-            }
-        }
-        SharedPreferences.Editor editor = settings.edit();
-        editor.putString("ReceiptNumber", receiptNumberStr.substring(1));
-        editor.commit();
-    }
-
-    protected TextView setLinkOnTextView(TextView target, String message, String link) {
-        target.setText(createSpannableString(message, link));
-        target.setMovementMethod(LinkMovementMethod.getInstance());
-        return target;
-    }
-
-    protected SpannableString createSpannableString(final String message, final String link) {
-        SpannableString spannableString = new SpannableString(message);
-
-        spannableString.setSpan(new ClickableSpan() {
-            @Override
-            public void onClick(View widget) {
-                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(link));
-                startActivity(intent);
-            }
-        }, 0, message.length(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
-
-        return spannableString;
     }
 
     protected void openBrowser(final String url) {
