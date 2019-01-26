@@ -52,7 +52,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         settings = getSharedPreferences(PREFS_NAME, 0);
-        receiptInfo = new ReceiptInfo(settings.getString("PhoneNumber", "09011112222"), settings.getString("ReceiptNumber", ""));
+        receiptInfo = ReceiptInfo.parse(settings.getString("TicketResult", "{}"));
 
         receiptBox = (LinearLayout) findViewById(R.id.receipts);
         phoneNumberEdit = (EditText) findViewById(R.id.phone_number);
@@ -77,6 +77,7 @@ public class MainActivity extends AppCompatActivity {
                     reviewTicket(i);
                 }
                 receiptInfo.setReceiptNumberStr(receiptNumberStr.substring(1));
+                Log.i("receipt info", ReceiptInfo.stringify(receiptInfo));
                 setSettings();
             }
         });
@@ -209,8 +210,7 @@ public class MainActivity extends AppCompatActivity {
 //        Log.d("PhoneNumber", receiptInfo.getPhoneNumber());
 //        Log.d("ReceiptNumber", receiptInfo.getReceiptNumberStr());
         SharedPreferences.Editor editor = settings.edit();
-        editor.putString("PhoneNumber", receiptInfo.getPhoneNumber());
-        editor.putString("ReceiptNumber", receiptInfo.getReceiptNumberStr());
+        editor.putString("TicketResult", ReceiptInfo.stringify(receiptInfo));
         editor.commit();
     }
 

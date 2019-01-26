@@ -12,10 +12,10 @@ class ReceiptInfo {
         this(phoneNumber, receiptNumberStr.split(","));
     }
     public ReceiptInfo(String phoneNumber) {
-        this(phoneNumber, new String[]{});
+        this(phoneNumber, new String[]{""});
     }
     public ReceiptInfo() {
-        this("09011112222", new String[]{});
+        this("09011112222", new String[]{""});
     }
 
     public String getPhoneNumber() {
@@ -53,7 +53,24 @@ class ReceiptInfo {
         this.receiptNumbers = receiptNumberStr.split(",");
     }
 
-    public String stringify() {
-        return "{phonenumber:"+this.phoneNumber+"}";
+    public static String stringify(ReceiptInfo receiptInfo) {
+        return "{phoneNumber:"+receiptInfo.getPhoneNumber()+";receiptNumbers:"+receiptInfo.getReceiptNumberStr()+"}";
+    }
+    public static ReceiptInfo parse(String receiptInfoStr) {
+        ReceiptInfo receiptInfo = new ReceiptInfo();
+        String str = receiptInfoStr.substring(1, receiptInfoStr.length()-1);
+        for (String element : str.split(";")) {
+            String[] parts = element.split(":");
+            switch (parts[0]) {
+                case "phoneNumber":
+                    receiptInfo.setPhoneNumber(parts[1]);
+                    break;
+                case "receiptNumbers":
+                    receiptInfo.setReceiptNumberStr(parts[1]);
+                    break;
+                default: break;
+            }
+        }
+        return receiptInfo;
     }
 }
