@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="button_text">check result</string>
+    <string name="tel_shortHint">00011112222</string>
+    <string name="tel_hint">電話番号（00011112222）</string>
+</resources>

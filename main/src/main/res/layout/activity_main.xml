@@ -1,50 +1,54 @@
 <?xml version="1.0" encoding="utf-8"?>
 <android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
-    <LinearLayout
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:layout_height="match_parent">
 
         <LinearLayout
-            android:id="@+id/receipts"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
+            <LinearLayout
+                android:id="@+id/receipts"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/add_receipt"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:layout_gravity="center"
+                android:background="@android:drawable/ic_input_add"
+                android:backgroundTint="?android:attr/colorControlNormal"
+                android:textAllCaps="false" />
+
+            <Button
+                android:id="@+id/submit"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="15dp"
+                android:text="@string/button_text"
+                android:textAllCaps="false" />
+
+            <EditText
+                android:id="@+id/phone_number"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:autofillHints="@string/tel_shortHint"
+                android:ems="10"
+                android:hint="@string/tel_hint"
+                android:inputType="phone" />
         </LinearLayout>
-
-        <Button
-            android:id="@+id/add_receipt"
-            android:layout_width="30dp"
-            android:layout_height="30dp"
-            android:layout_gravity="center"
-            android:background="@android:drawable/ic_input_add"
-            android:backgroundTint="?android:attr/colorControlNormal"
-            android:textAllCaps="false" />
-
-        <Button
-            android:id="@+id/submit"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginTop="15dp"
-            android:text="check result"
-            android:textAllCaps="false" />
-
-        <EditText
-            android:id="@+id/phone_number"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:autofillHints="00011112222"
-            android:ems="10"
-            android:hint="電話番号（00011112222）"
-            android:inputType="phone" />
-    </LinearLayout>
+    </ScrollView>
 
 </android.support.constraint.ConstraintLayout>
